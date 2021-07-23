@@ -24,10 +24,11 @@ class _HomeScreenState extends State<HomeScreen> {
     List<PopularBookModel> pops =[];
 
     for(var p in jsonData['results']){
+      // var author = await http.get(Uri.http('138.68.180.28', 'api/v1/library/authors/${p["author"][0]}'));
+      // var authorj = jsonDecode(author.body);
       PopularBookModel pop = PopularBookModel(p["title"], p["id"], p["publication_date"], p["book_cover"], 0xFFFFD3B6, p["summary"]);
       pops.add(pop);
     }
-    print(pops.length);
     return pops;
   }
   @override
@@ -139,24 +140,53 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 margin: EdgeInsets.only(top: 21),
                 height: 210,
-                child: ListView.builder(
-                    padding: EdgeInsets.only(left: 25, right: 6),
-                    itemCount: newbooks.length,
-                    physics: BouncingScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        margin: EdgeInsets.only(right: 19),
-                        height: 210,
-                        width: 153,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: kMainColor,
-                            image: DecorationImage(
-                              image: AssetImage(newbooks[index].image),
-                            )),
-                      );
-                    }),
+                child:
+                  FutureBuilder(
+                    future: getPopbook(),
+                    builder: (context, snapshot) {
+                      if (snapshot.data == null) {
+                        return Container(
+                          child: Center(
+                            child: Text('Loading...'),
+                          ),
+                        );
+                      } else
+                        return
+                          ListView.builder(
+                              padding: EdgeInsets.only(left: 25, right: 6),
+                              itemCount: snapshot.data.length,
+                              physics: BouncingScrollPhysics(),
+                              scrollDirection: Axis.horizontal,
+                              itemBuilder: (context, index) {
+                                return GestureDetector(
+                                    onTap: () {
+                                      print('ListView Tapped');
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SelectedBookScreen(
+                                                  popularBookModel: snapshot
+                                                      .data[index]),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      margin: EdgeInsets.only(right: 19),
+                                      height: 210,
+                                      width: 153,
+                                      decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              10),
+                                          color: kMainColor,
+                                          image: DecorationImage(
+                                            image: NetworkImage(
+                                                snapshot.data[index].image),
+                                          )),
+                                    )
+                                );
+                              });
+                    })
               ),
               Padding(
                 padding: EdgeInsets.only(left: 25, top: 25),
