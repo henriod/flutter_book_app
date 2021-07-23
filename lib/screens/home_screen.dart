@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +9,7 @@ import 'package:flutterbookapp/models/popularbook_model.dart';
 import 'package:flutterbookapp/screens/selected_book_screen.dart';
 import 'package:flutterbookapp/widgets/custom_tab_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -14,6 +17,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Future getPopbook() async{
+    var response = await http.get(Uri.http("138.68.180.28","api/v1/library/books/"));
+    var jsonData = jsonDecode(response.body);
+
+    List<PopularBookModel> pops =[];
+
+    for(var p in jsonData['results']){
+      PopularBookModel pop = PopularBookModel(p["title"], p["id"], p["publication_date"], p["book_cover"], 0xFFFFD3B6, p["summary"]);
+      pops.add(pop);
+    }
+    print(pops.length);
+    return pops;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,81 +168,99 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: kBlackColor),
                 ),
               ),
-              ListView.builder(
-                  padding: EdgeInsets.only(top: 25, right: 25, left: 25),
-                  physics: BouncingScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: populars.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        print('ListView Tapped');
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SelectedBookScreen(
-                                popularBookModel: populars[index]),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: 19),
-                        height: 81,
-                        width: MediaQuery.of(context).size.width - 50,
-                        color: kBackgroundColor,
-                        child: Row(
-                          children: <Widget>[
-                            Container(
-                              height: 81,
-                              width: 62,
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(5),
-                                  image: DecorationImage(
-                                    image: AssetImage(populars[index].image),
-                                  ),
-                                  color: kMainColor),
-                            ),
-                            SizedBox(
-                              width: 21,
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  populars[index].title,
-                                  style: GoogleFonts.openSans(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: kBlackColor),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Text(
-                                  populars[index].author,
-                                  style: GoogleFonts.openSans(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w400,
-                                      color: kGreyColor),
-                                ),
-                                SizedBox(
-                                  height: 5,
-                                ),
-                                Text(
-                                  '\$' + populars[index].price,
-                                  style: GoogleFonts.openSans(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: kBlackColor),
-                                )
-                              ],
-                            )
-                          ],
+              FutureBuilder(
+                  future: getPopbook(),
+                  builder: (context, snapshot){
+                    if(snapshot.data == null){
+                      return Container(
+                        child: Center(
+                          child: Text('Loading...'),
                         ),
-                      ),
-                    );
-                  })
+                      );
+                    } else return
+                      ListView.builder(
+                        padding: EdgeInsets.only(top: 25, right: 25, left: 25),
+                        physics: BouncingScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () {
+                              print('ListView Tapped');
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SelectedBookScreen(
+                                      popularBookModel: snapshot.data[index]),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: EdgeInsets.only(bottom: 19),
+                              height: 81,
+                              width: MediaQuery.of(context).size.width - 50,
+                              color: kBackgroundColor,
+                              child: Row(
+                                children: <Widget>[
+                                  Container(
+                                    height: 81,
+                                    width: 62,
+                                    decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(5),
+                                        image: DecorationImage(
+                                          image: NetworkImage(snapshot.data[index].image),
+                                        ),
+                                        color: kMainColor),
+                                  ),
+                                  SizedBox(
+                                    width: 21,
+                                  ),
+                                  Expanded(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Text(
+                                            snapshot.data[index].title,
+                                            overflow: TextOverflow.ellipsis,
+                                            softWrap: false,
+                                            style: GoogleFonts.openSans(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: kBlackColor),
+                                          ),
+                                          SizedBox(
+                                            height: 5,
+                                          ),
+                                          Text(
+                                            snapshot.data[index].author,
+                                            style: GoogleFonts.openSans(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w400,
+                                                color: kGreyColor),
+                                          ),
+                                          SizedBox(
+                                            height: 5,
+                                          ),
+                                          Text(
+                                            '\$' + snapshot.data[index].price,
+                                            style: GoogleFonts.openSans(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: kBlackColor),
+                                          )
+                                        ],
+                                      )
+                                  ),
+
+                                ],
+                              ),
+                            ),
+                          );
+                        });
+
+                    },
+                  ),
             ],
           ),
         ),

@@ -1,11 +1,28 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutterbookapp/constants/color_constant.dart';
 import 'package:flutterbookapp/models/popularbook_model.dart';
 import 'package:flutterbookapp/widgets/custom_tab_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class SelectedBookScreen extends StatelessWidget {
+
+  Future getPopbook() async{
+    var response = await http.get(Uri.http("138.68.180.28","api/v1/library/books/"));
+    var jsonData = jsonDecode(response.body);
+
+    List<PopularBookModel> pops =[];
+
+    for(var p in jsonData['results']){
+      PopularBookModel pop = PopularBookModel(p["title"], p["id"], p["publication_date"], p["book_cover"], 0xFFFFD3B6, p["summary"]);
+      pops.add(pop);
+    }
+    print(pops.length);
+    return pops;
+  }
   final PopularBookModel popularBookModel;
 
   SelectedBookScreen({Key key, @required this.popularBookModel})
@@ -20,7 +37,9 @@ class SelectedBookScreen extends StatelessWidget {
         color: Colors.transparent,
         child: FlatButton(
           color: kMainColor,
-          onPressed: () {},
+          onPressed: () {
+            getPopbook();
+          },
           child: Text(
             'Add to Library',
             style: GoogleFonts.openSans(
@@ -70,7 +89,7 @@ class SelectedBookScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             image: DecorationImage(
-                              image: AssetImage(popularBookModel.image),
+                              image: NetworkImage(popularBookModel.image),
                             ),
                           ),
                         ),
